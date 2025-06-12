@@ -44,7 +44,7 @@ class Measurement(models.Model):
 
     date = models.DateField(
         _('Date'),
-        default=datetime.datetime.now,
+        default=datetime.date.today,
     )
 
     value = models.DecimalField(
