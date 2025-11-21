@@ -20,7 +20,8 @@
 FROM wger/base:latest AS builder
 ARG DEBIAN_FRONTEND=noninteractive
 
-RUN apt update \
+RUN wget -O- https://deb.nodesource.com/setup_22.x | bash - \
+  && apt update \
   && apt install --no-install-recommends -y \
       build-essential \
       python3-dev \
@@ -32,31 +33,29 @@ RUN apt update \
       libpq-dev \
       rustc \
       cargo \
-      yarnpkg \
-      sassc \
-    && ln -s /usr/bin/yarnpkg /usr/bin/yarn \
-    && ln -s /usr/bin/sassc /usr/bin/sass
+      nodejs \
+    && rm -rf /var/lib/apt/lists/* \
+    && npm install -g sass
 
 # Build the necessary python wheels
-# Note that the --mount is a workaround for https://github.com/rust-lang/cargo/issues/8719
-COPY pyproject.toml .
-COPY wger/version.py ./wger/version.py
-COPY wger/__init__.py ./wger/__init__.py
-COPY README.md ./README.md
-RUN --mount=type=tmpfs,target=/root/.cargo pip3 wheel --no-cache-dir --wheel-dir /wheels --group docker . \
-  && pip3 install --break-system-packages --user --no-cache-dir /wheels/*
-
-COPY . /home/wger/src
 WORKDIR /home/wger/src
-RUN yarn install \
-    && yarn build:css:sass
+COPY README.md pyproject.toml package.json package-lock.json package-lock.json /home/wger/src/
+COPY wger/version.py wger/__init__.py /home/wger/src/wger/
+COPY wger/core/static /root/src/wger/core/static
+RUN npm ci --production \
+    && npm run build:css:sass \
+    && PACKAGE_NAME="@wger-project/react-components" \
+    && PACKAGE_VERSION=$(node -p "require('./package.json').devDependencies['$PACKAGE_NAME']") \
+    && TARBALL=$(npm pack ${PACKAGE_NAME}@${PACKAGE_VERSION}) \
+    && mkdir -p node_modules/${PACKAGE_NAME} \
+    && tar -xzf ${TARBALL} -C node_modules/${PACKAGE_NAME} --strip-components=1
 
 
 ########
 # Final
 ########
 FROM wger/base:latest AS final
-LABEL maintainer="Roland Geider <roland@geider.net>"
+LABEL org.opencontainers.image.authors="wger team <hello@wger.de>"
 ENV TERM=xterm
 ARG DOCKER_DIR=./extras/docker/demo
 EXPOSE 80
@@ -90,9 +89,10 @@ RUN chmod 0644 /etc/cron.d/wger \
   && chmod +x /home/wger/venvwrapper \
   && touch /var/log/cron.log
 
-COPY --from=builder /wheels /wheels
 COPY --chown=wger:www-data . /home/wger/src
-COPY --from=builder --chown=wger:wger /home/wger/src/wger/core/static/yarn /home/wger/src/wger/core/static/yarn
+COPY --chown=wger:wger --from=builder /home/wger/src/node_modules /home/wger/src/node_modules
+COPY --chown=wger:wger --from=builder /home/wger/src/wger/core/static/bootstrap-compiled.css /home/wger/src/wger/core/static/bootstrap-compiled.css
+COPY --chown=wger:wger --from=builder /home/wger/src/wger/core/static/bootstrap-compiled.css.map /home/wger/src/wger/core/static/bootstrap-compiled.css.map
 
 # Set up the application
 RUN ln -s /home/wger/static/CACHE /var/www
@@ -107,7 +107,7 @@ RUN mkdir -p ~/static/CACHE ~/media \
     && ln -s /home/wger/static/CACHE /home/wger/src/CACHE \
     && chmod g+w /home/wger/static/CACHE
 
-RUN . /home/wger/venv/bin/activate \
+RUN --mount=type=bind,from=builder,source=/wheels,target=/wheels  . /home/wger/venv/bin/activate \
     && pip install --upgrade pip \
     && pip install --no-cache /wheels/* \
     && pip install -e . \

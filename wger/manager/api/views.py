@@ -165,7 +165,7 @@ class RoutineViewSet(viewsets.ModelViewSet):
     @action(detail=True)
     def structure(self, request, pk):
         """
-        Return full object structure of the routine.
+        Return the full object structure of the routine.
         """
         cache_key = CacheKeyMapper.routine_api_structure_key(pk)
         cached_data = cache.get(cache_key)

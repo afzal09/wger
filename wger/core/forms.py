@@ -33,7 +33,10 @@ from django.forms import (
     PasswordInput,
     widgets,
 )
-from django.utils.translation import gettext as _
+from django.utils.translation import (
+    gettext as _,
+    gettext_lazy,
+)
 
 # Third Party
 from crispy_forms.helper import FormHelper
@@ -53,6 +56,20 @@ from django_recaptcha.widgets import ReCaptchaV3
 from wger.core.models import UserProfile
 
 
+class PasswordInputWithToggle(PasswordInput):
+    """
+    Custom PasswordInput widget with eye icon toggle functionality
+    """
+
+    template_name = 'forms/password_with_toggle.html'
+
+    def __init__(self, attrs=None, render_value=False):
+        default_attrs = {'class': 'form-control'}
+        if attrs:
+            default_attrs.update(attrs)
+        super().__init__(default_attrs, render_value)
+
+
 class UserLoginForm(AuthenticationForm):
     """
     Form for logins
@@ -61,7 +78,10 @@ class UserLoginForm(AuthenticationForm):
     authenticate_on_clean = True
 
     def __init__(self, authenticate_on_clean=True, *args, **kwargs):
-        super(UserLoginForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
+
+        # Apply custom password widget
+        self.fields['password'].widget = PasswordInputWithToggle()
 
         self.authenticate_on_clean = authenticate_on_clean
 
@@ -105,21 +125,21 @@ class UserLoginForm(AuthenticationForm):
 
 
 class UserPreferencesForm(forms.ModelForm):
-    first_name = forms.CharField(label=_('First name'), required=False)
-    last_name = forms.CharField(label=_('Last name'), required=False)
+    first_name = forms.CharField(label=gettext_lazy('First name'), required=False)
+    last_name = forms.CharField(label=gettext_lazy('Last name'), required=False)
     email = EmailField(
-        label=_('Email'),
-        help_text=_('Used for password resets and, optionally, e-mail reminders.'),
+        label=gettext_lazy('Email'),
+        help_text=gettext_lazy('Used for password resets and, optionally, e-mail reminders.'),
         required=False,
     )
     birthdate = forms.DateField(
-        label=_('Date of Birth'),
+        label=gettext_lazy('Date of Birth'),
         required=False,
         widget=forms.DateInput(
             attrs={
                 'type': 'date',
-                'max': str(date.today().replace(year=date.today().year - 10)),
-                'min': str(date.today().replace(year=date.today().year - 100)),
+                'max': str(date(date.today().year - 10, 1, 1)),
+                'min': str(date(date.today().year - 100, 1, 1)),
             },
         ),
     )
@@ -142,6 +162,12 @@ class UserPreferencesForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super(UserPreferencesForm, self).__init__(*args, **kwargs)
+
+        hattrs = self.fields['height'].widget.attrs
+        hattrs.setdefault('type', 'number')
+        hattrs.setdefault('step', '1')
+        hattrs['min'] = '0'
+
         self.helper = FormHelper()
         self.helper.form_class = 'wger-form'
         self.helper.layout = Layout(
@@ -179,8 +205,8 @@ class UserPreferencesForm(forms.ModelForm):
 
 class UserEmailForm(forms.ModelForm):
     email = EmailField(
-        label=_('Email'),
-        help_text=_('Used for password resets and, optionally, email reminders.'),
+        label=gettext_lazy('Email'),
+        help_text=gettext_lazy('Used for password resets and, optionally, email reminders.'),
         required=False,
     )
 
@@ -230,14 +256,14 @@ class PasswordConfirmationForm(Form):
     """
 
     password = CharField(
-        label=_('Password'),
-        widget=PasswordInput,
-        help_text=_('Please enter your current password.'),
+        label=gettext_lazy('Password'),
+        widget=PasswordInputWithToggle,
+        help_text=gettext_lazy('Please enter your current password.'),
     )
 
     def __init__(self, user, data=None):
         self.user = user
-        super(PasswordConfirmationForm, self).__init__(data=data)
+        super().__init__(data=data)
         self.helper = FormHelper()
         self.helper.layout = Layout(
             'password',
@@ -262,11 +288,16 @@ class RegistrationForm(UserCreationForm, UserEmailForm):
     captcha = ReCaptchaField(
         widget=ReCaptchaV3,
         label='reCaptcha',
-        help_text=_('The form is secured with reCAPTCHA'),
+        help_text=gettext_lazy('The form is secured with reCAPTCHA'),
     )
 
     def __init__(self, *args, **kwargs):
-        super(RegistrationForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
+
+        # Apply custom password widgets
+        self.fields['password1'].widget = PasswordInputWithToggle()
+        self.fields['password2'].widget = PasswordInputWithToggle()
+
         self.helper = FormHelper()
         self.helper.form_class = 'wger-form'
         self.helper.layout = Layout(
@@ -288,7 +319,12 @@ class RegistrationFormNoCaptcha(UserCreationForm, UserEmailForm):
     """
 
     def __init__(self, *args, **kwargs):
-        super(RegistrationFormNoCaptcha, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
+
+        # Apply custom password widgets
+        self.fields['password1'].widget = PasswordInputWithToggle()
+        self.fields['password2'].widget = PasswordInputWithToggle()
+
         self.helper = FormHelper()
         self.helper.form_class = 'wger-form'
         self.helper.layout = Layout(
@@ -314,8 +350,8 @@ class FeedbackRegisteredForm(forms.Form):
     contact = forms.CharField(
         max_length=50,
         min_length=10,
-        label=_('Contact'),
-        help_text=_('Some way of answering you (e-mail, etc.)'),
+        label=gettext_lazy('Contact'),
+        help_text=gettext_lazy('Some way of answering you (e-mail, etc.)'),
         required=False,
     )
 
@@ -323,8 +359,8 @@ class FeedbackRegisteredForm(forms.Form):
         max_length=500,
         min_length=10,
         widget=widgets.Textarea,
-        label=_('Comment'),
-        help_text=_('What do you want to say?'),
+        label=gettext_lazy('Comment'),
+        help_text=gettext_lazy('What do you want to say?'),
         required=True,
     )
 
@@ -337,5 +373,5 @@ class FeedbackAnonymousForm(FeedbackRegisteredForm):
     captcha = ReCaptchaField(
         widget=ReCaptchaV3,
         label='reCaptcha',
-        help_text=_('The form is secured with reCAPTCHA'),
+        help_text=gettext_lazy('The form is secured with reCAPTCHA'),
     )

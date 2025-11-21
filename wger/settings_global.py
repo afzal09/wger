@@ -199,6 +199,11 @@ STATICFILES_FINDERS = (
     'compressor.finders.CompressorFinder',
 )
 
+# Additional places to copy to static files
+STATICFILES_DIRS = (
+    ('node', os.path.join(BASE_DIR, '..', 'node_modules')),
+)
+
 #
 # Email
 #
@@ -250,15 +255,22 @@ AVAILABLE_LANGUAGES = (
     ('es-ni', 'Nicaraguan Spanish'),
     ('es-ve', 'Venezuelan Spanish'),
     ('fr', 'French'),
+    ('he', 'Hebrew'),
     ('hr', 'Croatian'),
     ('it', 'Italian'),
+    ('ko', 'Korean'),
     ('nl', 'Dutch'),
     ('nb', 'Norwegian'),
     ('pl', 'Polish'),
     ('pt', 'Portuguese'),
     ('pt-br', 'Brazilian Portuguese'),
     ('ru', 'Russian'),
+    ('sk', 'Slovak'),
+    ('sl', 'Slovenian'),
+    ('sr', 'Serbian'),
     ('sv', 'Swedish'),
+    ('ta', 'Tamil'),
+    ('th', 'Thai'),
     ('tr', 'Turkish'),
     ('uk', 'Ukrainian'),
     ('zh-hans', 'Chinese simplified'),
@@ -549,6 +561,8 @@ WGER_SETTINGS = {
     'SYNC_EXERCISE_VIDEOS_CELERY': False,
     'SYNC_INGREDIENTS_CELERY': False,
     'SYNC_OFF_DAILY_DELTA_CELERY': False,
+    'CACHE_API_EXERCISES_CELERY': False,
+    'CACHE_API_EXERCISES_CELERY_FORCE_UPDATE': False,
     'TWITTER': False,
     'MASTODON': 'https://fosstodon.org/@wger',
     'USE_CELERY': False,

@@ -16,6 +16,7 @@
 
 # Standard Library
 import copy
+import datetime
 import logging
 from typing import List
 
@@ -63,9 +64,15 @@ def copy_routine(request, pk):
     # Copy workout
     routine_copy: Routine = copy.copy(routine)
     routine_copy.pk = None
+    routine_copy.created = None
     routine_copy.user = request.user
     routine_copy.is_template = False
     routine_copy.is_public = False
+
+    # Update the start and end date
+    routine_copy.start = datetime.date.today()
+    routine_copy.end = routine_copy.start + routine.duration
+
     routine_copy.save()
 
     # Copy the days
@@ -101,7 +108,7 @@ def copy_routine(request, pk):
                 copy_config(current_entry.restconfig_set.all(), slot_entry_copy)
                 copy_config(current_entry.maxrestconfig_set.all(), slot_entry_copy)
 
-                copy_config(current_entry.maxrestconfig_set.all(), slot_entry_copy)
                 copy_config(current_entry.setsconfig_set.all(), slot_entry_copy)
+                copy_config(current_entry.maxsetsconfig_set.all(), slot_entry_copy)
 
     return HttpResponseRedirect(routine_copy.get_absolute_url())

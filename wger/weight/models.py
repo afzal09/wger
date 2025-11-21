@@ -27,28 +27,12 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 
 
-# This file is part of wger Workout Manager.
-#
-# wger Workout Manager is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Affero General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# wger Workout Manager is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU Affero General Public License
-# along with Workout Manager.  If not, see <http://www.gnu.org/licenses/>.
-
-
 class WeightEntry(models.Model):
     """
     Model for a weight point
     """
 
-    date = models.DateField(verbose_name=_('Date'))
+    date = models.DateTimeField(verbose_name=_('Date'))
     weight = models.DecimalField(
         verbose_name=_('Weight'),
         max_digits=5,
@@ -80,7 +64,6 @@ class WeightEntry(models.Model):
             'date',
         ]
         get_latest_by = 'date'
-        unique_together = ('date', 'user')
 
     def __str__(self):
         """

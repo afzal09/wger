@@ -20,10 +20,13 @@ jobs:
         include:
           - platform: linux/amd64
             runner: ubuntu-latest
-          - platform: linux/arm/v7
-            runner: ubuntu-24.04-arm
           - platform: linux/arm64
             runner: ubuntu-24.04-arm
+
+          #Note: disabling ARMv7 for now, as the process fails with:
+          #      Error: Couldn't allocate enough memory
+          #- platform: linux/arm/v7
+          #runner: ubuntu-24.04-arm
     steps:
       - name: Prepare
         run: |
@@ -31,7 +34,7 @@ jobs:
           echo "PLATFORM_PAIR=${platform//\//-}" >> $GITHUB_ENV
 
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Docker meta
         id: meta
@@ -46,7 +49,7 @@ jobs:
             ${{ env.REGISTRY_IMAGE }}
 
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3.6.0
+        uses: docker/setup-qemu-action@v3.7.0
 
       - name: Set up Docker Buildx
         id: buildx
@@ -68,6 +71,9 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
+      - name: Set build date
+        run: echo "BUILD_DATE=$(date -u +'%Y-%m-%d')" >> $GITHUB_ENV
+
       - name: Build and push by digest
         id: build
         uses: docker/build-push-action@v6
@@ -78,6 +84,9 @@ jobs:
           platforms: ${{ matrix.platform }}
           labels: ${{ steps.meta.outputs.labels }}
           outputs: type=image,name=${{ env.REGISTRY_IMAGE }},push-by-digest=true,name-canonical=true,push=true
+          build-args: |
+            BUILD_DATE=${{ env.BUILD_DATE }}
+            BUILD_COMMIT=${{ github.sha }}
 
           # https://github.com/moby/buildkit#--export-cache-options
           # https://github.com/docker/buildx#--cache-tonametypetypekeyvalue
@@ -91,7 +100,7 @@ jobs:
           touch "/tmp/digests/${digest#sha256:}"
 
       - name: Upload digest
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: digests-${{ env.PLATFORM_PAIR }}
           path: /tmp/digests/*
@@ -109,7 +118,7 @@ jobs:
       - build-prod
     steps:
       - name: Download digests
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v6
         with:
           path: /tmp/digests
           pattern: digests-*

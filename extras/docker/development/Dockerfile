@@ -9,19 +9,19 @@ FROM wger/server:latest
 USER root
 
 WORKDIR /home/wger/src
-RUN apt-get update && \
-    apt-get install --no-install-recommends -y \
+RUN wget -O- https://deb.nodesource.com/setup_22.x | bash - \
+    apt update && \
+    apt install --no-install-recommends -y \
         git \
         vim \
-        yarnpkg \
+        nodejs \
         sassc \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* \
-    && ln -s /usr/bin/yarnpkg /usr/bin/yarn \
     && ln -s /usr/bin/sassc /usr/bin/sass
 
 USER wger
 COPY --chown=wger:wger . /home/wger/src
-RUN yarn install \
-    && yarn build:css:sass \
+RUN npm install \
+    && npm run build:css:sass \
     && pip3 install --break-system-packages --user --group dev --editable .

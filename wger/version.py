@@ -14,6 +14,7 @@
 
 # Standard Library
 import logging
+import os
 
 # Third Party
 from packaging.version import Version
@@ -31,10 +32,10 @@ Minimum version of the mobile app required to access this server.
 Always use versions in the x.y.z format, without any suffixes like "beta1" or such.
 """
 
-MIN_SERVER_VERSION = Version('2.3.0-beta2')
+MIN_SERVER_VERSION = Version('2.4.0-alpha2')
 """Minimum version of the server required to run sync commands on this server"""
 
-VERSION = Version('2.4.0-alpha1')
+VERSION = Version('2.4.0-alpha2')
 """Current version of the app"""
 
 
@@ -43,3 +44,16 @@ def get_version(version: Version = None) -> str:
         version = VERSION
 
     return str(version)
+
+
+def get_version_with_git(version: Version = None) -> str:
+    version = get_version(version)
+    git_sha1 = os.environ.get('APP_BUILD_COMMIT', '')[:7]
+    if git_sha1:
+        version += f'+git{git_sha1}'
+
+    return version
+
+
+def get_version_date() -> str | None:
+    return os.environ.get('APP_BUILD_DATE')
